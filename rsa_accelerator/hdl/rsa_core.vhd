@@ -5,7 +5,7 @@
 --                https://www.ntnu.edu/ies
 -- Course       : TFE4141 Design of digital systems 1 (DDS1)
 -- Year         : 2018
--- Project      : RSA accelerator
+-- Project      : RSA accelerator 
 -- License      : This is free and unencumbered software released into the 
 --                public domain (UNLICENSE)
 --------------------------------------------------------------------------------
