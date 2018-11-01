@@ -14,7 +14,7 @@
 --   C = M xor key_n
 --
 --   Replace/change this module so that it implements the function
---   C = M**key_e mod key_n.
+--   C = M**key_e mod key_n.,
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
