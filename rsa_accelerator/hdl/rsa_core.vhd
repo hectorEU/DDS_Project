@@ -68,9 +68,25 @@ end rsa_core;
 architecture rtl of rsa_core is
 
 begin
+
+
+-- Instantiation of RL binary METHOD block.
+u_rl_binary_method : entity work.rl_binary_method
+	generic map (
+		C_BLOCK_SIZE        => C_BLOCK_SIZE
+	)
+	port map (
+	
+    msgin_data     => msgin_data,
+    msgout_data     => msgout_data,
+    key_e_d         => key_e_d,
+    key_n           => key_n
+	);
+	
+
   msgout_valid <= msgin_valid;   
   msgin_ready  <= msgout_ready;
-  msgout_data  <= msgin_data xor key_n;
+--  msgout_data  <= msgin_data xor key_n;
   msgout_last  <= msgin_last;
   rsa_status   <= (others => '0');
 end rtl;
