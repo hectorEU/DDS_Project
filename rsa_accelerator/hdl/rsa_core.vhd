@@ -60,7 +60,8 @@ entity rsa_core is
     -----------------------------------------------------------------------------    
 		key_e_d                 :  in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
     key_n                   :  in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-    rsa_status              : out std_logic_vector(31 downto 0)    
+    rsa_status              : out std_logic_vector(31 downto 0);
+    user_defined_16_23              : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)      
           
   );
 end rsa_core;
@@ -80,7 +81,8 @@ u_rl_binary_method : entity work.rl_binary_method
     msgin_data     => msgin_data,
     msgout_data     => msgout_data,
     key_e_d         => key_e_d,
-    key_n           => key_n
+    key_n           => key_n,
+    r2              => user_defined_16_23
 	);
 	
 
