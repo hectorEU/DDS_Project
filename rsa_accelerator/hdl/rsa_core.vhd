@@ -67,7 +67,7 @@ entity rsa_core is
 end rsa_core;
 
 architecture rtl of rsa_core is
-
+signal data_accept : std_logic := '0';
 begin
 
 
@@ -77,7 +77,9 @@ u_rl_binary_method : entity work.rl_binary_method
 		C_BLOCK_SIZE        => C_BLOCK_SIZE
 	)
 	port map (
-	
+	clk            => clk,
+	msgin_ready    =>data_accept,
+	reset_n        => reset_n,
     msgin_data     => msgin_data,
     msgout_data     => msgout_data,
     key_e_d         => key_e_d,
@@ -85,7 +87,7 @@ u_rl_binary_method : entity work.rl_binary_method
     r2              => user_defined_16_23
 	);
 	
-
+  data_accept <= (msgin_valid and msgout_ready);
   msgout_valid <= msgin_valid;   
   msgin_ready  <= msgout_ready;
 --  msgout_data  <= msgin_data xor key_n;
