@@ -1,6 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.std_logic_unsigned.all; -- needed for the + operator
+use IEEE.STD_LOGIC_ARITH.ALL; -- and operators, etc
 
 entity montgomery is 
 	generic (
@@ -26,7 +28,37 @@ end montgomery;
 
 architecture montgomery of montgomery is
 
+signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal result    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal result_temp    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal counter    : std_logic_vector(7 downto 0);
 begin
+
+process (clk) begin
+
+   if (clk'event and clk = '1') then
+     Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
+     if (counter = 0) then -- rising edge = new data
+       Shreg <= a;              -- load next value.
+       r <= result; -- send result out.
+     end if;
+     counter <= counter + '1';
+   end if;
+   if (Shreg(0) ='0') then
+   result_temp <= std_logic_vector(to_unsigned(0,C_BLOCK_SIZE));
+   elsif (Shreg(0) ='1') then
+   result_temp <= b;
+    end if;
+    result <= result + result_temp;
+    if ( result(0)  = '0') then
+        result <= '0' & result(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
+   else
+        result <= (result + key_n);
+        result <= '0' & result(C_BLOCK_SIZE-1 downto 1);
+   end if;
+end process;
+
+
 --  . corresponding to the function: int montgomery(int a, int b, int modulus, int k)
 -- k = C_BLOCK_SIZE
 -- r = montgomery (r, c, key_n, k)

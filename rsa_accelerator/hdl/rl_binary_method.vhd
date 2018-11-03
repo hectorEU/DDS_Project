@@ -40,12 +40,15 @@ signal p_new             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal a_in             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal b_in             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
+
 signal serial_e_d : std_logic := '0';
 signal dataReady : std_logic := '0';
 signal internalClk : std_logic := '0';
 signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
 signal counter    : std_logic_vector(7 downto 0);
+signal clk_counter    : std_logic_vector(7 downto 0);
+signal clk_256 :      std_logic := '0'; -- clock divided 256 times.
 begin
 
 --  . corresponding to the function: int RL_binary_method(int m, int e, int modulus, int r2, int k) where the return is msgout_data--
@@ -68,22 +71,38 @@ u_mod_mult : entity work.mod_mult
     r2          => r2
 	);
 	
--- 256 register
+-- clock divider.
+
+process (clk) begin
+ if (clk'event and clk = '1') then
+    clk_counter <= clk_counter + 1;
+    if (clk_counter = 255) then
+        clk_256 <= not clk_256;
+    end if;
+ end if;
+end process;
 
 -- wait for all data to be ready before reading registers.
+
 process (msgin_ready) begin
 if (msgin_ready'event and msgin_ready = '0') then -- all data has been transferred.
     dataReady <= '1';
     c_new <= std_logic_vector(to_unsigned(1,C_BLOCK_SIZE)); -- intialize c=1.
     p_new <=msgin_data; -- p = m
-elsif (msgin_ready'event and msgin_ready = '1') then -- data is currently beeing transferred.
+end if;
+if (msgin_ready'event and msgin_ready = '1') then -- data is currently beeing transferred.
     dataReady <= '0';
 end if;
 end process;
 
- process (clk) begin -- obs! this clock must be drastically slowed down. For each step down the hierarcy (next step would be the mod_mult entity) the clock must be speed up 256 or 512 times or something.
-
-   if (clk'event and clk = '1') then
+ process (clk, clk_256) begin -- obs! this clock must be drastically slowed down. For each step down the hierarcy (next step would be the mod_mult entity) the clock must be speed up 256 or 512 times or something.
+   
+   if (clk'event and clk='1' and reset_n = '0') then
+   clk_256 <= '1';
+   end if;
+   
+   
+   if (clk_256'event and clk_256 = '1') then
      Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
      if dataReady='1' then -- rising edge = new data
        Shreg <= msgin_data;              -- load it
@@ -95,7 +114,7 @@ end process;
     
    end if;
    
-   if (clk'event and clk = '0') then
+   if (clk_256'event and clk_256 = '0') then
         serial_e_d <= Shreg(0);
         if (serial_e_d = '1') then
             a_in <= c_prev;
