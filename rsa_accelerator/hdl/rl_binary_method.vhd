@@ -20,6 +20,7 @@ entity rl_binary_method is
 port(
 clk                    :  in std_logic;
 msgin_ready                    :  in std_logic;
+msgout_ready                    :  out std_logic;
 reset_n                :  in std_logic;
 msgin_data             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 msgout_data             : out std_logic_vector(C_BLOCK_SIZE-1 downto 0);
@@ -44,8 +45,9 @@ signal dataReady : std_logic := '0';
 signal internalClk : std_logic := '0';
 signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
-
+signal counter    : std_logic_vector(7 downto 0);
 begin
+
 --  . corresponding to the function: int RL_binary_method(int m, int e, int modulus, int r2, int k) where the return is msgout_data--
 -- k=256 = C_BLOCK_SIZE
 -- r2 read from register.
@@ -80,6 +82,7 @@ end if;
 end process;
 
  process (clk) begin
+
    if (clk'event and clk = '1') then
      Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
      if dataReady='1' then -- rising edge = new data
@@ -89,6 +92,7 @@ end process;
      c_prev <= c_new; -- c_new and p_new are updated on negedge clk, and should keep their value long enough to be readable on posedge clk (e.g. right here).
      p_prev <= p_new;
      
+    
    end if;
    
    if (clk'event and clk = '0') then
@@ -103,13 +107,21 @@ end process;
         a_in <= p_prev;
         b_in <= p_prev;
         p_new <=cp_out;
+        
+        counter <= counter + '1';
+        if (counter = 255) then
+            msgout_data <= cp_out; -- should be ready after 256 clk cycles         
+            msgout_ready <= '1';
+        end if;
+        
    end if;
 
 
-   
 
-   
- End process;
+    
+
+    
+end process;
 
 end rl_core;
 

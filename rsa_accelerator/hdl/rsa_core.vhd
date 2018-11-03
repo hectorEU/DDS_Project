@@ -79,12 +79,14 @@ u_rl_binary_method : entity work.rl_binary_method
 	port map (
 	clk            => clk,
 	msgin_ready    =>data_accept,
+	msgout_ready    => msgin_ready,
 	reset_n        => reset_n,
     msgin_data     => msgin_data,
     msgout_data     => msgout_data,
     key_e_d         => key_e_d,
     key_n           => key_n,
     r2              => user_defined_16_23
+    
 	);
 	
   data_accept <= (msgin_valid and msgout_ready);
