@@ -60,7 +60,7 @@ u_mod_mult : entity work.mod_mult
 		C_BLOCK_SIZE        => C_BLOCK_SIZE
 	)
 	port map (
-	
+	clk => clk,
     a     => a_in,
     b     => b_in,
     cp_out         => cp_out,
@@ -74,14 +74,14 @@ u_mod_mult : entity work.mod_mult
 process (msgin_ready) begin
 if (msgin_ready'event and msgin_ready = '0') then -- all data has been transferred.
     dataReady <= '1';
-    c_new <= std_logic_vector(to_unsigned(1,C_BLOCK_SIZE-1)); -- intialize c=1.
+    c_new <= std_logic_vector(to_unsigned(1,C_BLOCK_SIZE)); -- intialize c=1.
     p_new <=msgin_data; -- p = m
-else -- data is currently beeing transferred.
+elsif (msgin_ready'event and msgin_ready = '1') then -- data is currently beeing transferred.
     dataReady <= '0';
 end if;
 end process;
 
- process (clk) begin
+ process (clk) begin -- obs! this clock must be drastically slowed down. For each step down the hierarcy (next step would be the mod_mult entity) the clock must be speed up 256 or 512 times or something.
 
    if (clk'event and clk = '1') then
      Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right

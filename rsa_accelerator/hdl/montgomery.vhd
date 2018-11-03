@@ -16,6 +16,7 @@ entity montgomery is
     C_S_AXI_ADDR_WIDTH    : integer    := 8
 );
 port(
+clk                    :  in std_logic;
 a             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 b             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 r             : out std_logic_vector(C_BLOCK_SIZE-1 downto 0);
