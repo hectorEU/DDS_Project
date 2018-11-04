@@ -29,7 +29,6 @@ architecture modular_multiplier of mod_mult is
 
 signal r_1             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal r_2             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal a_r             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
 begin
 
@@ -54,7 +53,7 @@ u_montgomery2 : entity work.montgomery
         clk => clk,
         a     => r_1,
         b     => r2,
-        r         => r_2,
+        r         => cp_out,
         key_n           => key_n
         );
 --  . corresponding to the function: int mod_mult(int a, int b, int modulus, int c, int k)
@@ -63,6 +62,6 @@ u_montgomery2 : entity work.montgomery
 -- cp_out is returned.
 
 
-cp_out <= r_2; -- return product from the modular multiplier. (but this is not ready until after 256 (local) clk cycles (if the two previous can run in parallel) or 512 if they cant.
+--cp_out <= r_2; -- return product from the modular multiplier. (but this is not ready until after 256 (local) clk cycles (if the two previous can run in parallel) or 512 if they cant.
 
 end modular_multiplier;

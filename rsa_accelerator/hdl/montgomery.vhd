@@ -32,30 +32,46 @@ signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal result    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal result_temp    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal counter    : std_logic_vector(7 downto 0);
+signal result_temp2    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 begin
+
 
 process (clk) begin
 
-   if (clk'event and clk = '1') then
-     Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
-     if (counter = 0) then -- rising edge = new data
-       Shreg <= a;              -- load next value.
-       r <= result; -- send result out.
-     end if;
-     counter <= counter + '1';
-   end if;
-   if (Shreg(0) ='0') then
-   result_temp <= std_logic_vector(to_unsigned(0,C_BLOCK_SIZE));
-   elsif (Shreg(0) ='1') then
-   result_temp <= b;
-    end if;
-    result <= result + result_temp;
-    if ( result(0)  = '0') then
-        result <= '0' & result(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
-   else
-        result <= (result + key_n);
-        result <= '0' & result(C_BLOCK_SIZE-1 downto 1);
-   end if;
+
+       if (rising_edge(clk)) then
+   
+            result <= result + result_temp;
+            
+       end if;
+       if (falling_edge(clk)) then
+             r <= std_logic_vector(to_unsigned(0,C_BLOCK_SIZE));
+             if (counter = 0) then -- rising edge = new data
+                   Shreg <= a;              -- load next value.
+                    r <= result; -- send result out.
+              else
+                   Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
+             end if;
+             
+             counter <= counter + '1'; 
+             
+           
+           
+           if (Shreg(0) ='0') then
+                result_temp <= std_logic_vector(to_unsigned(0,C_BLOCK_SIZE));
+           elsif (Shreg(0) ='1') then
+                result_temp <= b;
+            end if;
+            -- r = r + r_temp moved to posedge.
+            if ( result(0)  = '0') then
+                result <= '0' & result(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
+           else
+                result_temp2 <= (result + key_n);
+                result <= '0' & result_temp2(C_BLOCK_SIZE-1 downto 1);
+                
+           end if;
+       end if;
+
 end process;
 
 

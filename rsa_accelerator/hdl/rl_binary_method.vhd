@@ -71,38 +71,40 @@ u_mod_mult : entity work.mod_mult
     r2          => r2
 	);
 	
--- clock divider.
 
-process (clk) begin
- if (clk'event and clk = '1') then
-    clk_counter <= clk_counter + 1;
-    if (clk_counter = 255) then
-        clk_256 <= not clk_256;
-    end if;
- end if;
-end process;
 
 -- wait for all data to be ready before reading registers.
 
 process (msgin_ready) begin
-if (msgin_ready'event and msgin_ready = '0') then -- all data has been transferred.
+if (falling_edge(msgin_ready)) then -- all data has been transferred.
     dataReady <= '1';
     c_new <= std_logic_vector(to_unsigned(1,C_BLOCK_SIZE)); -- intialize c=1.
     p_new <=msgin_data; -- p = m
 end if;
-if (msgin_ready'event and msgin_ready = '1') then -- data is currently beeing transferred.
+if (rising_edge(msgin_ready)) then -- data is currently beeing transferred.
     dataReady <= '0';
 end if;
 end process;
 
  process (clk, clk_256) begin -- obs! this clock must be drastically slowed down. For each step down the hierarcy (next step would be the mod_mult entity) the clock must be speed up 256 or 512 times or something.
-   
-   if (clk'event and clk='1' and reset_n = '0') then
-   clk_256 <= '1';
+  
+  -- clock divider. 
+  if (rising_edge(clk)) then
+  
+        if (reset_n = '0') then
+             clk_256 <= '1';
+         elsif (reset_n = '1') then
+             clk_counter <= clk_counter + 1;
+            if (clk_counter = 255) then
+              clk_256 <= not clk_256;
+            end if;
+         end if;
+      
    end if;
+   ----
    
    
-   if (clk_256'event and clk_256 = '1') then
+   if (rising_edge(clk_256)) then
      Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
      if dataReady='1' then -- rising edge = new data
        Shreg <= msgin_data;              -- load it
@@ -114,7 +116,7 @@ end process;
     
    end if;
    
-   if (clk_256'event and clk_256 = '0') then
+   if (falling_edge(clk_256)) then
         serial_e_d <= Shreg(0);
         if (serial_e_d = '1') then
             a_in <= c_prev;

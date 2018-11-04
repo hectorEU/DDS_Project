@@ -1,25 +1,44 @@
---------------------------------------------------------------------------------
--- Author       : Oystein Gjermundnes
--- Organization : Norwegian University of Science and Technology (NTNU)
---                Department of Electronic Systems
---                https://www.ntnu.edu/ies
--- Course       : TFE4141 Design of digital systems 1 (DDS1)
--- Year         : 2018
--- Project      : RSA accelerator 
--- License      : This is free and unencumbered software released into the 
---                public domain (UNLICENSE)
---------------------------------------------------------------------------------
--- Purpose: 
---   RSA encryption core template. This core currently computes
---   C = M xor key_n
---
---   Replace/change this module so that it implements the function
---   C = M**key_e mod key_n.,
---------------------------------------------------------------------------------
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-entity rsa_core is
+----------------------------------------------------------------------------------
+-- Company: 
+-- Engineer: 
+-- 
+-- Create Date: 11/04/2018 05:59:23 PM
+-- Design Name: 
+-- Module Name: rsa_core_tb - Behavioral
+-- Project Name: 
+-- Target Devices: 
+-- Tool Versions: 
+-- Description: 
+-- 
+-- Dependencies: 
+-- 
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:
+-- 
+----------------------------------------------------------------------------------
+
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+-- Uncomment the following library declaration if using
+-- arithmetic functions with Signed or Unsigned values
+--use IEEE.NUMERIC_STD.ALL;
+
+-- Uncomment the following library declaration if instantiating
+-- any Xilinx leaf cells in this code.
+--library UNISIM;
+--use UNISIM.VComponents.all;
+
+entity rsa_core_tb is
+--  Port ( );
+end rsa_core_tb;
+
+
+architecture Behavioral of rsa_core_tb is
+
+component rsa_core is
 	generic (
 		-- Users to add parameters here
     C_BLOCK_SIZE          : integer := 256
@@ -64,35 +83,35 @@ entity rsa_core is
     user_defined_16_23              : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)      
           
   );
-end rsa_core;
+end component rsa_core;
 
-architecture rtl of rsa_core is
-signal data_accept : std_logic := '0';
+signal clk,msgin_valid,msgout_ready,reset_n, msgin_last:      std_logic := '1';
+signal msgin_data, m_out,key_e_d,key_n,user_defined_16_23 : std_logic_vector(255 downto 0);
+
 begin
 
+DUT: entity work.rsa_core
+port map (
+clk => clk,
+reset_n => reset_n,
+msgin_valid => msgin_valid,
+msgout_ready => msgout_ready,
+ msgin_data =>  msgin_data,
+  msgin_last =>  msgin_last,
+  key_e_d  => key_e_d ,
+  key_n => key_n,
+  user_defined_16_23 => user_defined_16_23
+  
 
--- Instantiation of RL binary METHOD block.
-u_rl_binary_method : entity work.rl_binary_method
-	generic map (
-		C_BLOCK_SIZE        => C_BLOCK_SIZE
-	)
-	port map (
-	clk            => clk,
-	msgin_ready    =>data_accept,
-	msgout_ready    => msgin_ready,
-	reset_n        => reset_n,
-    msgin_data     => msgin_data,
-    msgout_data     => msgout_data,
-    key_e_d         => key_e_d,
-    key_n           => key_n,
-    r2              => user_defined_16_23
-    
-	);
-	
-  data_accept <= (msgin_valid and msgout_ready);
-  msgout_valid <= msgin_valid;   
-  --msgin_ready  <= msgout_ready;
---  msgout_data  <= msgin_data xor key_n;
-  msgout_last  <= msgin_last;
-  rsa_status   <= (others => '0');
-end rtl;
+);
+
+clk <= not clk after 10 ns;
+    stimulus: process is
+    begin
+        reset_n <= '0'; wait for 10 ns;
+        
+        wait for 100 ns;
+    end process stimulus;
+
+
+end Behavioral;
