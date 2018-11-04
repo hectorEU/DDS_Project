@@ -12,11 +12,11 @@ use IEEE.numeric_std.all;
 
 entity modular_exponentiation is
 
-	generic(WIDTH_IN : integer := 32
+	generic(WIDTH_IN : integer := 256
 	);
 	port(	N :	  in unsigned(WIDTH_IN-1 downto 0); --Number
-		--Exp :	  in unsigned(WIDTH_IN-1 downto 0); --Exponent
-		--M :	  in unsigned(WIDTH_IN-1 downto 0); --Modulus
+		Exp :	  in unsigned(WIDTH_IN-1 downto 0); --Exponent
+		M :	  in unsigned(WIDTH_IN-1 downto 0); --Modulus
 		enc_dec:  in std_logic;
 		clk :	  in std_logic;
 		reset :	  in std_logic;
