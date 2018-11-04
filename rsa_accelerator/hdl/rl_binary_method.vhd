@@ -93,7 +93,7 @@ end process;
         if (reset_n = '0') then
              clk_256 <= '1';
              clk_counter <= std_logic_vector(to_unsigned(0,8));
-             counter <= std_logic_vector(to_unsigned(0,8));
+
          elsif (reset_n = '1') then
              clk_counter <= clk_counter + 1;
             if (clk_counter = 0) then
@@ -105,8 +105,12 @@ end process;
    ----
 end process;
 --msgout_data(255) <= clk_256;
-msgout_data(255 downto 255-7) <= counter;
+--msgout_data(255 downto 255-7) <= counter;
 process (clk_256) begin
+
+if (reset_n = '0') then
+             counter <= std_logic_vector(to_unsigned(0,8));
+end if;
    if (rising_edge(clk_256) and reset_n='1') then
   Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
   if dataReady='1' then -- rising edge = new data
@@ -135,7 +139,8 @@ if (falling_edge(clk_256) and reset_n='1') then
      counter <= counter + '1';
      if (counter = 255) then
             
-    --     msgout_data <= r2;--cp_out; -- should be ready after 256 clk cycles   
+         msgout_data <= cp_out; -- should be ready after 256 clk cycles   
+         
          msgout_ready <= '1';
          else
          

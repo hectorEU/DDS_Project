@@ -28,7 +28,6 @@ end mod_mult;
 architecture modular_multiplier of mod_mult is
 
 signal r_1             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal r_2             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
 signal output             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 begin
@@ -62,7 +61,7 @@ u_montgomery2 : entity work.montgomery
 -- c = r2
 -- cp_out is returned.
 
-cp_out <= k; --<= std_logic_vector(to_unsigned(123456789,256));
---cp_out <= r_2; -- return product from the modular multiplier. (but this is not ready until after 256 (local) clk cycles (if the two previous can run in parallel) or 512 if they cant.
+--cp_out <= k; --<= std_logic_vector(to_unsigned(123456789,256));
+cp_out <= output; -- return product from the modular multiplier. (but this is not ready until after 256 (local) clk cycles (if the two previous can run in parallel) or 512 if they cant.
 
 end modular_multiplier;

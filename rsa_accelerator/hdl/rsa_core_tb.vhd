@@ -112,15 +112,15 @@ clk <= not clk after 1 ns;
         reset_n <= '1'; wait for 1 ns;
         reset_n <= '0'; wait for 1000 ns;
         reset_n <= '1'; wait for 60 ns;
-        msgin_data <= std_logic_vector(to_unsigned(123456789,256)); -- happens when msgin_ready=1
-        key_e_d <= std_logic_vector(to_unsigned(123,256));
-        key_n <= std_logic_vector(to_unsigned(6,256));
-       user_defined_16_23 <= std_logic_vector(to_unsigned(8,256));
+        msgin_data <= std_logic_vector(to_unsigned(7,256)); -- happens when msgin_ready=1
+        key_e_d <= std_logic_vector(to_unsigned(10,256));
+        key_n <= std_logic_vector(to_unsigned(13,256));
+       user_defined_16_23 <= std_logic_vector(to_unsigned(9,256));
         msgin_valid <= '1'; wait for 30 ns; -- confirm that the message just sent is valid.
  
-        wait for 5000 us; -- wait and see if we received our encrypted message at msgout_data.
+        wait for 75536 ns; -- wait and see if we received our encrypted message at msgout_data.
         msgout_ready <= '1';
-        
+        wait for 800 us;
         
     end process stimulus;
 

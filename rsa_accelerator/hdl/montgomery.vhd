@@ -48,7 +48,7 @@ process (clk) begin
              r <= std_logic_vector(to_unsigned(0,C_BLOCK_SIZE));
              if (counter = 0) then -- rising edge = new data
                    Shreg <= a;              -- load next value.
-                 --   r <= result; -- send result out.
+                  r <= result; -- send result out.
               else
                    Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
              end if;
@@ -80,6 +80,6 @@ end process;
 -- r = montgomery (r, c, key_n, k)
 
 
-r <= std_logic_vector(to_unsigned(2468,256));
+--r <= std_logic_vector(to_unsigned(2468,256));
 
 end montgomery;
