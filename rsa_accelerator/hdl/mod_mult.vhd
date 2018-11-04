@@ -21,7 +21,7 @@ a             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 b             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 cp_out             : out std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 key_n        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-r2        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)
+k        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)
 );
 end mod_mult;
 
@@ -30,6 +30,7 @@ architecture modular_multiplier of mod_mult is
 signal r_1             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal r_2             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
+signal output             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 begin
 
 -- Instantiation of MONTGOMERY blocks (can these run in parallel?.
@@ -52,8 +53,8 @@ u_montgomery2 : entity work.montgomery
         port map (
         clk => clk,
         a     => r_1,
-        b     => r2,
-        r         => cp_out,
+        b     => k,
+        r         => output,
         key_n           => key_n
         );
 --  . corresponding to the function: int mod_mult(int a, int b, int modulus, int c, int k)
@@ -61,7 +62,7 @@ u_montgomery2 : entity work.montgomery
 -- c = r2
 -- cp_out is returned.
 
-
+cp_out <= k; --<= std_logic_vector(to_unsigned(123456789,256));
 --cp_out <= r_2; -- return product from the modular multiplier. (but this is not ready until after 256 (local) clk cycles (if the two previous can run in parallel) or 512 if they cant.
 
 end modular_multiplier;

@@ -78,8 +78,8 @@ u_rl_binary_method : entity work.rl_binary_method
 	)
 	port map (
 	clk            => clk,
-	msgin_ready    =>data_accept,
-	msgout_ready    => msgin_ready,
+	msgin_ready    =>msgin_valid,
+	msgout_ready    => msgout_valid,
 	reset_n        => reset_n,
     msgin_data     => msgin_data,
     msgout_data     => msgout_data,
@@ -90,8 +90,8 @@ u_rl_binary_method : entity work.rl_binary_method
 	);
 	
   data_accept <= (msgin_valid and msgout_ready);
-  msgout_valid <= msgin_valid;   
-  --msgin_ready  <= msgout_ready;
+  --msgout_valid <= msgin_valid;   
+  msgin_ready  <= msgout_ready;
 --  msgout_data  <= msgin_data xor key_n;
   msgout_last  <= msgin_last;
   rsa_status   <= (others => '0');

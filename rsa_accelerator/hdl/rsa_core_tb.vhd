@@ -17,10 +17,10 @@
 -- Additional Comments:
 -- 
 ----------------------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
-
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -85,8 +85,8 @@ component rsa_core is
   );
 end component rsa_core;
 
-signal clk,msgin_valid,msgout_ready,reset_n, msgin_last:      std_logic := '1';
-signal msgin_data, m_out,key_e_d,key_n,user_defined_16_23 : std_logic_vector(255 downto 0);
+signal clk,msgin_valid,msgout_ready,reset_n, msgin_last:      std_logic := '0';
+signal msgin_data, msgout_data, m_out,key_e_d,key_n,user_defined_16_23 : std_logic_vector(255 downto 0);
 
 begin
 
@@ -96,6 +96,7 @@ clk => clk,
 reset_n => reset_n,
 msgin_valid => msgin_valid,
 msgout_ready => msgout_ready,
+msgout_data =>  msgout_data,
  msgin_data =>  msgin_data,
   msgin_last =>  msgin_last,
   key_e_d  => key_e_d ,
@@ -105,12 +106,22 @@ msgout_ready => msgout_ready,
 
 );
 
-clk <= not clk after 10 ns;
+clk <= not clk after 1 ns;
     stimulus: process is
     begin
-        reset_n <= '0'; wait for 10 ns;
+        reset_n <= '1'; wait for 1 ns;
+        reset_n <= '0'; wait for 1000 ns;
+        reset_n <= '1'; wait for 60 ns;
+        msgin_data <= std_logic_vector(to_unsigned(123456789,256)); -- happens when msgin_ready=1
+        key_e_d <= std_logic_vector(to_unsigned(123,256));
+        key_n <= std_logic_vector(to_unsigned(6,256));
+       user_defined_16_23 <= std_logic_vector(to_unsigned(8,256));
+        msgin_valid <= '1'; wait for 30 ns; -- confirm that the message just sent is valid.
+ 
+        wait for 5000 us; -- wait and see if we received our encrypted message at msgout_data.
+        msgout_ready <= '1';
         
-        wait for 100 ns;
+        
     end process stimulus;
 
 

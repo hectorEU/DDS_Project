@@ -33,7 +33,7 @@ end rl_binary_method;
 architecture rl_core of rl_binary_method is
 signal c_prev             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal c_new             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal cp_out             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal cp_out           : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal p_prev             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal p_new             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
@@ -68,7 +68,7 @@ u_mod_mult : entity work.mod_mult
     b     => b_in,
     cp_out         => cp_out,
     key_n           => key_n,
-    r2          => r2
+    k          => r2
 	);
 	
 
@@ -86,62 +86,62 @@ if (rising_edge(msgin_ready)) then -- data is currently beeing transferred.
 end if;
 end process;
 
- process (clk, clk_256) begin -- obs! this clock must be drastically slowed down. For each step down the hierarcy (next step would be the mod_mult entity) the clock must be speed up 256 or 512 times or something.
-  
+ process (clk, reset_n) begin 
   -- clock divider. 
   if (rising_edge(clk)) then
   
         if (reset_n = '0') then
              clk_256 <= '1';
+             clk_counter <= std_logic_vector(to_unsigned(0,8));
+             counter <= std_logic_vector(to_unsigned(0,8));
          elsif (reset_n = '1') then
              clk_counter <= clk_counter + 1;
-            if (clk_counter = 255) then
+            if (clk_counter = 0) then
               clk_256 <= not clk_256;
             end if;
          end if;
-      
+   
    end if;
    ----
-   
-   
-   if (rising_edge(clk_256)) then
-     Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
-     if dataReady='1' then -- rising edge = new data
-       Shreg <= msgin_data;              -- load it
+end process;
+--msgout_data(255) <= clk_256;
+msgout_data(255 downto 255-7) <= counter;
+process (clk_256) begin
+   if (rising_edge(clk_256) and reset_n='1') then
+  Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
+  if dataReady='1' then -- rising edge = new data
+    Shreg <= msgin_data;              -- load it
+  end if;
+  
+  c_prev <= c_new; -- c_new and p_new are updated on negedge clk, and should keep their value long enough to be readable on posedge clk (e.g. right here).
+  p_prev <= p_new;
+  
+ 
+end if;
+
+if (falling_edge(clk_256) and reset_n='1') then
+     serial_e_d <= Shreg(0);
+     if (serial_e_d = '1') then
+         a_in <= c_prev;
+         b_in <= p_prev;
+         c_new <=cp_out;
+     else
+         c_new <= c_prev;
+     end if;
+     a_in <= p_prev;
+     b_in <= p_prev;
+     p_new <=cp_out;
+     
+     counter <= counter + '1';
+     if (counter = 255) then
+            
+    --     msgout_data <= r2;--cp_out; -- should be ready after 256 clk cycles   
+         msgout_ready <= '1';
+         else
+         
      end if;
      
-     c_prev <= c_new; -- c_new and p_new are updated on negedge clk, and should keep their value long enough to be readable on posedge clk (e.g. right here).
-     p_prev <= p_new;
-     
-    
-   end if;
-   
-   if (falling_edge(clk_256)) then
-        serial_e_d <= Shreg(0);
-        if (serial_e_d = '1') then
-            a_in <= c_prev;
-            b_in <= p_prev;
-            c_new <=cp_out;
-        else
-            c_new <= c_prev;
-        end if;
-        a_in <= p_prev;
-        b_in <= p_prev;
-        p_new <=cp_out;
-        
-        counter <= counter + '1';
-        if (counter = 255) then
-            msgout_data <= cp_out; -- should be ready after 256 clk cycles         
-            msgout_ready <= '1';
-        end if;
-        
-   end if;
-
-
-
-    
-
-    
+end if;
 end process;
 
 end rl_core;
