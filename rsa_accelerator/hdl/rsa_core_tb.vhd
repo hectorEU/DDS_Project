@@ -85,7 +85,7 @@ component rsa_core is
   );
 end component rsa_core;
 
-signal clk,msgin_valid,msgout_ready,reset_n, msgin_last:      std_logic := '0';
+signal finito, clk,msgin_valid, msgout_valid, msgin_ready,reset_n, msgin_last:      std_logic := '0';
 signal msgin_data, msgout_data, m_out,key_e_d,key_n,user_defined_16_23 : std_logic_vector(255 downto 0);
 
 begin
@@ -95,7 +95,9 @@ port map (
 clk => clk,
 reset_n => reset_n,
 msgin_valid => msgin_valid,
-msgout_ready => msgout_ready,
+msgin_ready => msgin_ready,
+msgout_valid => msgout_valid,
+msgout_ready => msgin_ready,
 msgout_data =>  msgout_data,
  msgin_data =>  msgin_data,
   msgin_last =>  msgin_last,
@@ -109,19 +111,47 @@ msgout_data =>  msgout_data,
 clk <= not clk after 1 ns;
     stimulus: process is
     begin
-        reset_n <= '1'; wait for 1 ns;
+        finito <= '0'; -- just for the test to see if we finnished.
+        
         reset_n <= '0'; wait for 1000 ns;
         reset_n <= '1'; wait for 60 ns;
-        msgin_data <= std_logic_vector(to_unsigned(7,256)); -- happens when msgin_ready=1
-        key_e_d <= std_logic_vector(to_unsigned(10,256));
-        key_n <= std_logic_vector(to_unsigned(13,256));
-       user_defined_16_23 <= std_logic_vector(to_unsigned(9,256));
-        msgin_valid <= '1'; wait for 30 ns; -- confirm that the message just sent is valid.
- 
-        wait for 75536 ns; -- wait and see if we received our encrypted message at msgout_data.
-        msgout_ready <= '1';
-        wait for 800 us;
         
+        
+        
+       key_e_d <= std_logic_vector(to_unsigned(10,256));
+       key_n <= std_logic_vector(to_unsigned(13,256));
+       user_defined_16_23 <= std_logic_vector(to_unsigned(9,256));
+       
+        msgin_data <= std_logic_vector(to_unsigned(7,256)); -- the data to be encrypted/decrypted
+        
+        
+        msgin_valid <= '1'; -- let our rsa machine know we have a valid message ready.  
+        -- while this is 1, our rsa machine should start reading through our  meesage bit for bit. when this turns 0 it should pause.
+        while (msgin_ready = '0') loop -- wait for our rsa machine to be ready to accept new message and start rading bit by bit.
+           wait for 1 ns;
+        end loop;
+        --  waiting for the reading process to finnish.
+        -- it should probably happen imidiatly.
+        
+          while (msgin_ready = '1') loop -- should turn to 0 when message is read.
+            wait for 1 ns;
+        end loop;
+        msgin_valid <= '0'; -- message transmission complete. 
+        --msgin_data<= std_logic_vector(to_unsigned(0,256)); 
+        ----
+        ----
+        -- here is where the magic happens in our rsa machine...
+        ----
+        -----
+        
+        while (msgout_valid = '0') loop -- waiting for the encryption/decryption process to finnish.
+            wait for 1 ns;
+        end loop;
+        
+        -- process has finnished now we can go to the next message.:
+        
+        finito <= '1'; -- test success.
+        wait;
     end process stimulus;
 
 

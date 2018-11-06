@@ -19,8 +19,9 @@ entity rl_binary_method is
 );
 port(
 clk                    :  in std_logic;
-msgin_ready                    :  in std_logic;
-msgout_ready                    :  out std_logic;
+msgin_valid                    :  in std_logic;
+msgin_ready                   :  out std_logic;
+msgout_valid                   :  out std_logic;
 reset_n                :  in std_logic;
 msgin_data             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 msgout_data             : out std_logic_vector(C_BLOCK_SIZE-1 downto 0);
@@ -31,24 +32,26 @@ r2        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)
 end rl_binary_method;
 
 architecture rl_core of rl_binary_method is
-signal c_prev             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal c_new             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal cp_out           : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal p_prev             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal p_new             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal c            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal p            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal i            : std_logic_vector(7 downto 0); -- counter
 
-signal a_in             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal b_in             : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal a_out            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal b_out            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
+signal cp_in            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
-signal serial_e_d : std_logic := '0';
-signal dataReady : std_logic := '0';
-signal internalClk : std_logic := '0';
 signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
 signal counter    : std_logic_vector(7 downto 0);
 signal clk_counter    : std_logic_vector(7 downto 0);
-signal clk_256 :      std_logic := '0'; -- clock divided 256 times.
+
+
+TYPE State_type IS (RESET, LOAD_NEW_MESSAGE, ONE, TWO, THREE, FOUR, READY_SEND, READY_READ); -- the 4 different states
+	SIGNAL State,State_next : State_Type;   -- Create a signal that uses 
+	
+
+signal clk_256:      std_logic := '0'; -- clock divided 256 times.
 begin
 
 --  . corresponding to the function: int RL_binary_method(int m, int e, int modulus, int r2, int k) where the return is msgout_data--
@@ -64,90 +67,99 @@ u_mod_mult : entity work.mod_mult
 	)
 	port map (
 	clk => clk,
-    a     => a_in,
-    b     => b_in,
-    cp_out         => cp_out,
+	reset_n => reset_n,
+    a     => a_out,
+    b     => b_out,
+    cp_out         => cp_in,
     key_n           => key_n,
     k          => r2
 	);
 	
 
-
--- wait for all data to be ready before reading registers.
-
-process (msgin_ready) begin
-if (falling_edge(msgin_ready)) then -- all data has been transferred.
-    dataReady <= '1';
-    c_new <= std_logic_vector(to_unsigned(1,C_BLOCK_SIZE)); -- intialize c=1.
-    p_new <=msgin_data; -- p = m
-end if;
-if (rising_edge(msgin_ready)) then -- data is currently beeing transferred.
-    dataReady <= '0';
-end if;
-end process;
-
- process (clk, reset_n) begin 
-  -- clock divider. 
-  if (rising_edge(clk)) then
-  
-        if (reset_n = '0') then
-             clk_256 <= '1';
-             clk_counter <= std_logic_vector(to_unsigned(0,8));
-
-         elsif (reset_n = '1') then
-             clk_counter <= clk_counter + 1;
-            if (clk_counter = 0) then
-              clk_256 <= not clk_256;
-            end if;
-         end if;
-   
-   end if;
-   ----
-end process;
---msgout_data(255) <= clk_256;
---msgout_data(255 downto 255-7) <= counter;
 process (clk_256) begin
 
-if (reset_n = '0') then
+if (falling_edge(clk_256) and reset_n='1') then
+    CASE State IS
+        WHEN RESET =>
+            msgin_ready <= '0';
+            if msgin_valid = '1' then
+            State_next <= READY_READ;
+            end if;
+        WHEN READY_READ =>
+            msgin_ready <= '1';
+            if (msgin_valid = '1') then
+                State_next <= LOAD_NEW_MESSAGE;
+            end if;    
+        WHEN LOAD_NEW_MESSAGE =>
+             msgout_valid <= '0';
              counter <= std_logic_vector(to_unsigned(0,8));
-end if;
-   if (rising_edge(clk_256) and reset_n='1') then
-  Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
-  if dataReady='1' then -- rising edge = new data
-    Shreg <= msgin_data;              -- load it
-  end if;
-  
-  c_prev <= c_new; -- c_new and p_new are updated on negedge clk, and should keep their value long enough to be readable on posedge clk (e.g. right here).
-  p_prev <= p_new;
-  
- 
+             Shreg <= msgin_data; -- load message.
+             c <= std_logic_vector(to_unsigned(1,256)); -- c=1
+             p <= msgin_data; -- p=m
+             State_next <=ONE;
+        WHEN ONE =>
+             msgin_ready <= '0';
+             a_out <= c;
+             b_out <= p;             
+             counter <= counter + 1;
+             State_next <= TWO;
+             
+        WHEN TWO =>
+            Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift message left to right]
+            if (Shreg(0) = '1') then
+                c<=cp_in;
+            end if;
+            State_next <= THREE;          
+        WHEN THREE =>
+            a_out <= p;
+            b_out <= p;
+            State_next <= FOUR;
+        WHEN FOUR =>
+            p <= cp_in;
+            if (counter = 0) then
+            State_next <= READY_SEND;
+            else
+            State_next <= ONE;
+            end if;
+        WHEN READY_SEND =>
+            msgout_data <= c;
+            msgout_valid <= '1';
+            State_next <= RESET;
+            
+        WHEN others =>
+            State_next <= RESET;
+    end CASE;
 end if;
 
-if (falling_edge(clk_256) and reset_n='1') then
-     serial_e_d <= Shreg(0);
-     if (serial_e_d = '1') then
-         a_in <= c_prev;
-         b_in <= p_prev;
-         c_new <=cp_out;
-     else
-         c_new <= c_prev;
-     end if;
-     a_in <= p_prev;
-     b_in <= p_prev;
-     p_new <=cp_out;
-     
-     counter <= counter + '1';
-     if (counter = 255) then
-            
-         msgout_data <= cp_out; -- should be ready after 256 clk cycles   
-         
-         msgout_ready <= '1';
-         else
-         
-     end if;
-     
+    if (rising_edge(clk_256)) then
+    
+    if (reset_n = '0') then
+       State <=RESET;
+    else
+       State <= State_next;
+    end if;
+    end if;
+end process;
+
+
+-- clock divider.
+process (clk) begin
+if (falling_edge(clk)) then
+    if (reset_n = '0') then
+        clk_256 <= '0';
+        clk_counter <= std_logic_vector(to_unsigned(0,8));
+
+    end if;
+    if (rising_edge(clk)) then
+        clk_counter <=clk_counter + 1;
+    end if;
+    if (clk_counter <= 0) then -- cuz it overflows at 256.
+        clk_256 <= not clk_256;
+    end if;
 end if;
 end process;
+
+
 
 end rl_core;
 

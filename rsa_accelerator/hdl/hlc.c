@@ -93,7 +93,7 @@ int main()
     int m = 7;
     int e = 10;
     int ans = RL_binary_method(7, 10, modulus, r2, k);
-	printf("\n%d", k);
+	printf("\n%d", r2);
     int ans2= (7*7*7*7*7*7*7*7*7*7)%modulus;
     printf("\n%d", ans2);
     printf("\n%d", ans);
