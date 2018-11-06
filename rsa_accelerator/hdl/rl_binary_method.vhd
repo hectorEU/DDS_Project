@@ -98,7 +98,7 @@ if (falling_edge(clk_256) and reset_n='1') then
              ready_modmult <= '0';
              msgout_valid <= '0';
              counter <= std_logic_vector(to_unsigned(0,8));
-             Shreg <= msgin_data; -- load message.
+             Shreg <= key_e_d; -- load key
              c <= std_logic_vector(to_unsigned(1,256)); -- c=1
              p <= msgin_data; -- p=m
              State_next <=ONE;
@@ -143,7 +143,7 @@ if (falling_edge(clk_256) and reset_n='1') then
 end if;
 
     if (rising_edge(clk_256)) then
-    
+
     if (reset_n = '0') then
        State <=RESET;
     else

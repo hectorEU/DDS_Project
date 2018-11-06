@@ -58,12 +58,14 @@ if (rising_edge(clk) and reset_n='1') then
             counter <= std_logic_vector(to_unsigned(0,8));
             Shreg <= a; -- load a.
             r_current <= std_logic_vector(to_unsigned(0,256)); -- r = 0;
+            if (ready_in = '1') then 
             State_next <= ONE;
+            end if;
         WHEN ONE =>
             ready_out <='0';
             counter <= counter + 1;
-            Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
-            if (Shreg(0) = '1') then
+            Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- (a >> i)
+            if (Shreg(0) = '1') then -- ((a >> i) & 1) * b;
                 r_current <= r_last + b;
             else
                 r_current <= r_last;
@@ -72,7 +74,7 @@ if (rising_edge(clk) and reset_n='1') then
        WHEN TWO =>
             ready_out <='0';
             if(r_last(0) = '0') then
-                r_current <= '0' & r_last(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
+                r_current <= '0' & r_last(C_BLOCK_SIZE-1 downto 1);     -- r = r >> 1;
                 State_next <= FOUR;
             else
                 r_temp <= r_last + key_n;
@@ -101,6 +103,7 @@ if (rising_edge(clk) and reset_n='1') then
             State_next <= ONE;
     WHEN READY_RETURN =>
             ready_out <='1';
+            r <= r_current; -- return this.
             if (ready_in = '1') then 
             State_next <=INIT;
             end if;
@@ -115,7 +118,7 @@ elsif(falling_edge(clk)) then
  --   else
         State <= State_next;
         r_last <= r_current;
-       r <= r_current; -- return this.
+       
   --  end if;
 end if;    
 end process;
