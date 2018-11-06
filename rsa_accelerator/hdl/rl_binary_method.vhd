@@ -123,7 +123,9 @@ if (falling_edge(clk_256) and reset_n='1') then
             a_out <= p;
             b_out <= p;
             ready_modmult <= '1';
+            if finito_modmult = '1' then
             State_next <= FOUR;
+            end if;
         WHEN FOUR =>
             ready_modmult <= '0';
             p <= cp_in;
