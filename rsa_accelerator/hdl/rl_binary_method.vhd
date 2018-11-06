@@ -51,7 +51,7 @@ TYPE State_type IS (RESET, LOAD_NEW_MESSAGE, ONE, TWO, THREE, FOUR, READY_SEND, 
 	SIGNAL State,State_next : State_Type;   -- Create a signal that uses 
 	
 
-signal clk_256, ready_modmult:      std_logic := '0'; -- clock divided 256 times.
+signal clk_256, ready_modmult, finito_modmult:      std_logic := '0'; -- clock divided 256 times.
 begin
 
 --  . corresponding to the function: int RL_binary_method(int m, int e, int modulus, int r2, int k) where the return is msgout_data--
@@ -68,6 +68,7 @@ u_mod_mult : entity work.mod_mult
 	port map (
 	clk => clk,
 	ready_in => ready_modmult,
+	ready_out => finito_modmult,
 	reset_n => reset_n,
     a     => a_out,
     b     => b_out,
@@ -106,10 +107,12 @@ if (falling_edge(clk_256) and reset_n='1') then
              msgin_ready <= '0';
              a_out <= c;
              b_out <= p;             
-             counter <= counter + 1;
+             if finito_modmult = '1' then -- we have to wait for this modmult to finish.
              State_next <= TWO;
+             end if;
              
         WHEN TWO =>
+            counter <= counter + 1;
             ready_modmult <= '0';
             Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift message left to right]
             if (Shreg(0) = '1') then
@@ -147,11 +150,13 @@ end if;
        State <= State_next;
     end if;
     end if;
+    
+    
 end process;
-
 
 -- clock divider.
 process (clk) begin
+
 if (falling_edge(clk)) then
     if (reset_n = '0') then
         clk_256 <= '0';

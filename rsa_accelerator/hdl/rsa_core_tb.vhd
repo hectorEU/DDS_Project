@@ -77,7 +77,7 @@ component rsa_core is
     -----------------------------------------------------------------------------
     -- Interface to the register block
     -----------------------------------------------------------------------------    
-		key_e_d                 :  in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+    ey_e_d                 :  in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
     key_n                   :  in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
     rsa_status              : out std_logic_vector(31 downto 0);
     user_defined_16_23              : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)      
@@ -85,7 +85,7 @@ component rsa_core is
   );
 end component rsa_core;
 
-signal finito, clk,msgin_valid, msgout_valid, msgin_ready,reset_n, msgin_last:      std_logic := '0';
+signal finito, clk,msgin_valid, msgout_valid, msgout_ready, msgin_ready,reset_n, msgin_last:      std_logic := '0';
 signal msgin_data, msgout_data, m_out,key_e_d,key_n,user_defined_16_23 : std_logic_vector(255 downto 0);
 
 begin
@@ -97,7 +97,7 @@ reset_n => reset_n,
 msgin_valid => msgin_valid,
 msgin_ready => msgin_ready,
 msgout_valid => msgout_valid,
-msgout_ready => msgin_ready,
+msgout_ready => msgout_ready,
 msgout_data =>  msgout_data,
  msgin_data =>  msgin_data,
   msgin_last =>  msgin_last,
@@ -122,7 +122,7 @@ clk <= not clk after 1 ns;
        key_n <= std_logic_vector(to_unsigned(13,256));
        user_defined_16_23 <= std_logic_vector(to_unsigned(9,256));
        
-        msgin_data <= std_logic_vector(to_unsigned(7,256)); -- the data to be encrypted/decrypted
+        msgin_data <= std_logic_vector(to_unsigned(999999999,256)); -- the data to be encrypted/decrypted
         
         
         msgin_valid <= '1'; -- let our rsa machine know we have a valid message ready.  
@@ -143,10 +143,17 @@ clk <= not clk after 1 ns;
         -- here is where the magic happens in our rsa machine...
         ----
         -----
+
         
         while (msgout_valid = '0') loop -- waiting for the encryption/decryption process to finnish.
             wait for 1 ns;
         end loop;
+        msgout_ready <= '1'; -- we are ready to receive the encrypted/decrypted message.
+        
+        
+        wait for 100 ns;
+        
+        msgout_ready <= '0'; -- reading process finnished.
         
         -- process has finnished now we can go to the next message.:
         

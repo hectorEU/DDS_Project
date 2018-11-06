@@ -37,7 +37,7 @@ signal result_temp    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
 signal result_temp2    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
-
+signal test    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal counter    : std_logic_vector(7 downto 0);
 signal r_current,r_last,r_temp    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
@@ -54,11 +54,13 @@ process (clk) begin
 if (rising_edge(clk) and reset_n='1') then
     CASE State IS
         WHEN INIT =>
+            ready_out <='0';
             counter <= std_logic_vector(to_unsigned(0,8));
             Shreg <= a; -- load a.
             r_current <= std_logic_vector(to_unsigned(0,256)); -- r = 0;
             State_next <= ONE;
         WHEN ONE =>
+            ready_out <='0';
             counter <= counter + 1;
             Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
             if (Shreg(0) = '1') then
@@ -68,6 +70,7 @@ if (rising_edge(clk) and reset_n='1') then
             end if;
             State_next <= TWO;
        WHEN TWO =>
+            ready_out <='0';
             if(r_last(0) = '0') then
                 r_current <= '0' & r_last(C_BLOCK_SIZE-1 downto 1);     -- shift it left to right
                 State_next <= FOUR;
@@ -77,6 +80,7 @@ if (rising_edge(clk) and reset_n='1') then
                 State_next <= THREE;
             end if;
       WHEN THREE =>
+            ready_out <='0';
             r_current <=  '0' & r_temp(C_BLOCK_SIZE-1 downto 1); 
             if (counter = 0) then
                 State_next <= READY_RETURN;
@@ -85,29 +89,34 @@ if (rising_edge(clk) and reset_n='1') then
             end if;
             
      WHEN FOUR =>
+            ready_out <='0';
             if (counter = 0) then
                 State_next <= READY_RETURN;
             else
                 State_next <= FIVE;
             end if;
     WHEN FIVE =>
-            r <= r_last;
+            ready_out <='0';
+            r_current <= r_last;
             State_next <= ONE;
     WHEN READY_RETURN =>
+            ready_out <='1';
+            if (ready_in = '1') then 
             State_next <=INIT;
+            end if;
     WHEN others =>
             State_next <= INIT;
     end CASE;
+    
 elsif(falling_edge(clk)) then
-    if (ready_in = '0') then
-        State <= INIT;
-        ready_out <='0';
-    else
+ --   if (ready_in = '0') then
+--        State <= INIT;
+ --       ready_out <='0';
+ --   else
         State <= State_next;
         r_last <= r_current;
-        r <= r_current; -- return this.
-        ready_out <= '1';
-    end if;
+       r <= r_current; -- return this.
+  --  end if;
 end if;    
 end process;
 
