@@ -51,7 +51,7 @@ TYPE State_type IS (RESET, LOAD_NEW_MESSAGE, ONE, TWO, THREE, FOUR, READY_SEND, 
 	SIGNAL State,State_next : State_Type;   -- Create a signal that uses 
 	
 
-signal clk_256:      std_logic := '0'; -- clock divided 256 times.
+signal clk_256, ready_modmult:      std_logic := '0'; -- clock divided 256 times.
 begin
 
 --  . corresponding to the function: int RL_binary_method(int m, int e, int modulus, int r2, int k) where the return is msgout_data--
@@ -67,6 +67,7 @@ u_mod_mult : entity work.mod_mult
 	)
 	port map (
 	clk => clk,
+	ready_in => ready_modmult,
 	reset_n => reset_n,
     a     => a_out,
     b     => b_out,
@@ -81,16 +82,19 @@ process (clk_256) begin
 if (falling_edge(clk_256) and reset_n='1') then
     CASE State IS
         WHEN RESET =>
+            ready_modmult <= '0';
             msgin_ready <= '0';
             if msgin_valid = '1' then
             State_next <= READY_READ;
             end if;
         WHEN READY_READ =>
+            ready_modmult <= '0';
             msgin_ready <= '1';
             if (msgin_valid = '1') then
                 State_next <= LOAD_NEW_MESSAGE;
             end if;    
         WHEN LOAD_NEW_MESSAGE =>
+             ready_modmult <= '0';
              msgout_valid <= '0';
              counter <= std_logic_vector(to_unsigned(0,8));
              Shreg <= msgin_data; -- load message.
@@ -98,6 +102,7 @@ if (falling_edge(clk_256) and reset_n='1') then
              p <= msgin_data; -- p=m
              State_next <=ONE;
         WHEN ONE =>
+             ready_modmult <= '1';
              msgin_ready <= '0';
              a_out <= c;
              b_out <= p;             
@@ -105,6 +110,7 @@ if (falling_edge(clk_256) and reset_n='1') then
              State_next <= TWO;
              
         WHEN TWO =>
+            ready_modmult <= '0';
             Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift message left to right]
             if (Shreg(0) = '1') then
                 c<=cp_in;
@@ -113,8 +119,10 @@ if (falling_edge(clk_256) and reset_n='1') then
         WHEN THREE =>
             a_out <= p;
             b_out <= p;
+            ready_modmult <= '1';
             State_next <= FOUR;
         WHEN FOUR =>
+            ready_modmult <= '0';
             p <= cp_in;
             if (counter = 0) then
             State_next <= READY_SEND;
