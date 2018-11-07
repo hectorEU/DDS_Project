@@ -32,10 +32,6 @@ end montgomery;
 architecture montgomery of montgomery is
 
 
-signal result    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal result_temp    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-
-signal result_temp2    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
 signal test    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);

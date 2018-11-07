@@ -51,7 +51,7 @@ TYPE State_type IS (RESET, LOAD_NEW_MESSAGE, ONE, TWO, THREE, FOUR, READY_SEND, 
 	SIGNAL State,State_next : State_Type;   -- Create a signal that uses 
 	
 
-signal clk_256, ready_modmult, finito_modmult:      std_logic := '0'; -- clock divided 256 times.
+signal clk_256, ready_modmult, finito_modmult, dbg:      std_logic := '0'; -- clock divided 256 times.
 begin
 
 --  . corresponding to the function: int RL_binary_method(int m, int e, int modulus, int r2, int k) where the return is msgout_data--
@@ -103,18 +103,21 @@ if (falling_edge(clk_256) and reset_n='1') then
              p <= msgin_data; -- p=m
              State_next <=ONE;
         WHEN ONE =>
-             ready_modmult <= '1';
+             
              msgin_ready <= '0';
              a_out <= c;
              b_out <= p;             
              if finito_modmult = '1' then -- we have to wait for this modmult to finish.
              State_next <= TWO;
+             ready_modmult <= '0';
+             else
+             ready_modmult <= '1';
              end if;
-             
         WHEN TWO =>
             counter <= counter + 1;
             ready_modmult <= '0';
-            Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift message left to right]
+            Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift e/d left to right]
+            dbg <=Shreg(0);
             if (Shreg(0) = '1') then
                 c<=cp_in;
             end if;
@@ -122,9 +125,12 @@ if (falling_edge(clk_256) and reset_n='1') then
         WHEN THREE =>
             a_out <= p;
             b_out <= p;
-            ready_modmult <= '1';
+            
             if finito_modmult = '1' then
             State_next <= FOUR;
+            ready_modmult <= '0';
+            else
+            ready_modmult <= '1';
             end if;
         WHEN FOUR =>
             ready_modmult <= '0';

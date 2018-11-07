@@ -118,11 +118,11 @@ clk <= not clk after 1 ns;
         
         
         
-       key_e_d <= std_logic_vector(to_unsigned(10,256));
-       key_n <= std_logic_vector(to_unsigned(13,256));
-       user_defined_16_23 <= std_logic_vector(to_unsigned(9,256));
+       key_e_d <= std_logic_vector(to_unsigned(5,256));
+       key_n <= std_logic_vector(to_unsigned(119,256));
+       user_defined_16_23 <= std_logic_vector(to_unsigned(18,256));
        
-        msgin_data <= std_logic_vector(to_unsigned(7,256)); -- the data to be encrypted/decrypted
+        msgin_data <= std_logic_vector(to_unsigned(19,256)); -- the data to be encrypted/decrypted
         
         
         msgin_valid <= '1'; -- let our rsa machine know we have a valid message ready.  
