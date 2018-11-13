@@ -45,9 +45,11 @@ SIGNAL State,State_next : State_Type;   -- Create a signal that uses
 begin
 
 
-process (clk) begin
 
-if (rising_edge(clk) and reset_n='1') then
+process (clk, reset_n) begin
+if (reset_n = '0') then
+State <= INIT;
+elsif (rising_edge(clk) and reset_n='1') then
     CASE State IS
         WHEN INIT =>
             ready_out <='0';
@@ -106,8 +108,9 @@ if (rising_edge(clk) and reset_n='1') then
     WHEN others =>
             State_next <= INIT;
     end CASE;
-    
-elsif(falling_edge(clk)) then
+end if;    
+
+if(falling_edge(clk) and reset_n='1') then
  --   if (ready_in = '0') then
 --        State <= INIT;
  --       ready_out <='0';

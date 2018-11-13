@@ -34,6 +34,8 @@ component rl_binary_method is
 Port(
 clk                    :  in std_logic;
 msgin_ready                    :  in std_logic;
+msgin_last                    :  in std_logic;
+msgout_last                    :  out std_logic;
 msgout_ready                    :  out std_logic;
 reset_n                :  in std_logic;
 msgin_data             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);

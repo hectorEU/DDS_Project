@@ -102,8 +102,17 @@ architecture rtl of rsa_accelerator is
   -----------------------------------------------------------------------------    
   signal key_e_d      : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
   signal key_n        : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-  signal rsa_status   : std_logic_vector(31 downto 0);     
-  signal user_defined_16_23   : std_logic_vector(C_BLOCK_SIZE-1 downto 0);  
+  signal user_defined_16_23        : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+  
+  signal rsa_status   : std_logic_vector(31 downto 0);  
+  
+  -----------------------------------------------------------------------------
+  -- Performance counter signals
+  -----------------------------------------------------------------------------
+  signal msgin_active     : std_logic;
+  signal msgout_active    : std_logic;      
+	signal event_rsa_active : std_logic;  
+     
 begin
 
 -- Instantiation of Axi Bus Interface S00_AXI
@@ -114,11 +123,11 @@ u_rsa_regio : entity work.rsa_regio
 		C_BLOCK_SIZE        => C_BLOCK_SIZE
 	)
 	port map (
-	
+	user_defined_16_23     => user_defined_16_23, 
     key_e_d    => key_e_d,
     key_n      => key_n,
     rsa_status => rsa_status,
-    user_defined_16_23 => user_defined_16_23,
+    event_rsa_active => event_rsa_active,
 
 		S_AXI_ACLK	  => clk,
 		S_AXI_ARESETN	=> reset_n,
@@ -142,6 +151,11 @@ u_rsa_regio : entity work.rsa_regio
 		S_AXI_RVALID	=> s00_axi_rvalid,
 		S_AXI_RREADY	=> s00_axi_rready
 	);
+	
+	-- The RSA accelerator is active if msgin or msgout have seen 
+	-- transactions, but the last transaction has not exited the 
+	-- msgout module
+	event_rsa_active <= msgin_active or msgout_active;
 
 -- Instantiation of Axi Bus Interface rsa_msgin
 u_rsa_msgin : entity work.rsa_msgin
@@ -163,7 +177,12 @@ u_rsa_msgin : entity work.rsa_msgin
     msgin_valid            => msgin_valid,   
     msgin_ready            => msgin_ready,
     msgin_data             => msgin_data,
-    msgin_last             => msgin_last		
+    msgin_last             => msgin_last,
+    
+    -----------------------------------------------------------------------------
+    -- Msgin active
+    -----------------------------------------------------------------------------
+    msgin_active          => msgin_active      		
 	);
 
 -- Instantiation of Axi Bus Interface rsa_msgout
@@ -187,7 +206,12 @@ u_rsa_msgout : entity work.rsa_msgout
     msgout_valid           => msgout_valid,   
     msgout_ready           => msgout_ready,
     msgout_data            => msgout_data,
-    msgout_last            => msgout_last 		
+    msgout_last            => msgout_last,
+    
+    -----------------------------------------------------------------------------
+    -- Msgout active
+    -----------------------------------------------------------------------------
+    msgout_active          => msgout_active         		
 	);
 
 u_rsa_core : entity work.rsa_core
@@ -222,8 +246,9 @@ u_rsa_core : entity work.rsa_core
     -----------------------------------------------------------------------------    
     key_e_d                => key_e_d,
     key_n                  => key_n,
-    rsa_status             => rsa_status,    
-    user_defined_16_23 => user_defined_16_23
+    rsa_status             => rsa_status,  
+    user_defined_16_23     => user_defined_16_23  
+  
   );
 
 end rtl;

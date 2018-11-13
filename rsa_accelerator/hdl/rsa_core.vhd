@@ -67,12 +67,45 @@ entity rsa_core is
 end rsa_core;
 
 architecture rtl of rsa_core is
-signal data_accept : std_logic := '0';
+
+component REG is 
+	generic (
+    -- Users to add parameters here
+    C_BLOCK_SIZE : integer := 256;
+
+    -- User parameters ends
+    -- Do not modify the parameters beyond this line
+
+    -- Width of S_AXI data bus
+    C_S_AXI_DATA_WIDTH    : integer    := 32;
+    -- Width of S_AXI address bus
+    C_S_AXI_ADDR_WIDTH    : integer    := 8
+);
+port(
+clk                    :  in std_logic;
+msgin_valid                    :  in std_logic;
+msgin_ready                   :  out std_logic;
+msgout_ready                   :  in std_logic;
+msgout_valid                   :  out std_logic;
+msgin_last                 :  in std_logic;
+msgout_last                   :  out std_logic;
+reset_n                :  in std_logic;
+msgin_data             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+msgout_data             : out std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+key_e_d      : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+key_n        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+r2        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)
+);
+end component;
+
 begin
 
 
--- Instantiation of RL binary METHOD block.
-u_rl_binary_method : entity work.rl_binary_method
+
+GEN_REG:
+for i in 0 to 0 generate
+
+REGX: entity work.rl_binary_method
 	generic map (
 		C_BLOCK_SIZE        => C_BLOCK_SIZE
 	)
@@ -80,6 +113,9 @@ u_rl_binary_method : entity work.rl_binary_method
 	clk            => clk,
 	msgin_valid    =>msgin_valid,
 	msgin_ready    => msgin_ready,
+	msgout_ready    => msgout_ready,
+	msgin_last    => msgin_last,
+	msgout_last    => msgout_last,
 	reset_n        => reset_n,
     msgin_data     => msgin_data,
   	msgout_valid    =>msgout_valid,  
@@ -89,13 +125,19 @@ u_rl_binary_method : entity work.rl_binary_method
     r2              => user_defined_16_23
     
 	);
+
+end generate GEN_REG;
+
+
+-- Instantiation of RL binary METHOD block.
+
 	
-  data_accept <= (msgin_valid and msgout_ready);
+
   --msgout_valid <= msgin_valid;   
   
  -- msgin_ready  <= msgin_valid; -- just to let them know we are alive.
   
 --  msgout_data  <= msgin_data xor key_n;
-  msgout_last  <= msgin_last;
+
   rsa_status   <= (others => '0');
 end rtl;
