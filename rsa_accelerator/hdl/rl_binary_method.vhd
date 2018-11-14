@@ -179,4 +179,3 @@ end process;
 
 
 end rl_core;
-

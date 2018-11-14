@@ -169,11 +169,11 @@ clk <= not clk after 40 ns;
         
         msgout_ready <= '1'; -- we are allways ready to receive data from rsa_core. (rsa core is a lot slower than us!)
         
-        key_e_d <= str_to_stdvec("5000000000000000000000000000000000000000000000000000000000000000");--std_logic_vector(to_unsigned(5,256));
-               key_n <= str_to_stdvec("7700000000000000000000000000000000000000000000000000000000000000"); --std_logic_vector(to_unsigned(119,256));
-               user_defined_16_23 <= str_to_stdvec("2100000000000000000000000000000000000000000000000000000000000000"); --std_logic_vector(to_unsigned(18,256));
+        key_e_d <= std_logic_vector(to_unsigned(5,256));
+               key_n <= std_logic_vector(to_unsigned(119,256));
+               user_defined_16_23 <= std_logic_vector(to_unsigned(18,256));
                
-                msgin_data <= str_to_stdvec("3100000000000000000000000000000000000000000000000000000000000000");--std_logic_vector(to_unsigned(19,256)); -- the data to be encrypted/decrypted
+                msgin_data <= std_logic_vector(to_unsigned(19,256)); -- the data to be encrypted/decrypted
         msgin_valid <= '1'; -- let our rsa machine know we have a valid message ready.  
         -- while this is 1, our rsa machine should start reading through our  meesage bit for bit. when this turns 0 it should pause.
         while (msgin_ready = '0') loop -- wait for our rsa machine to be ready to accept new message
