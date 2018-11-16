@@ -236,13 +236,13 @@ architecture struct of rsa_core_testbench is
   --
   function gen_r2 (n: unsigned(C_BLOCK_SIZE-1 downto 0) ) return std_logic_vector is
   variable result_buff: unsigned(C_BLOCK_SIZE-1  downto 0);
-  variable n_buff: unsigned(C_BLOCK_SIZE-1  downto 0);
   begin
     result_buff:= to_unsigned(2, C_BLOCK_SIZE);
+
     for i in 1 to 511 loop
         result_buff := (result_buff*2) mod n;
     end loop;
-    return  std_logic_vector(result_buff);
+    return  std_logic_vector(result_buff);--x"56DDF8B43061AD3DBCD1757244D1A19E2E8C849DDE4817E55BB29D1C20C06364";
  end function;
 
   -----------------------------------------------------------------------------   

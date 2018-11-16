@@ -8,7 +8,7 @@ entity rl_binary_method is
 	generic (
     -- Users to add parameters here
     C_BLOCK_SIZE : integer := 256;
-
+    MONT_BLOCK_SIZE : integer := 512;    
     -- User parameters ends
     -- Do not modify the parameters beyond this line
 
@@ -30,19 +30,20 @@ msgin_data             : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 msgout_data             : out std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 key_e_d      : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 key_n        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-r2        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)
+r2        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+rsa_status              : out std_logic_vector(31 downto 0)
 );
 end rl_binary_method;
 
 architecture rl_core of rl_binary_method is
-signal c            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal p            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal c            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
+signal p            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 signal i            : std_logic_vector(7 downto 0); -- counter
 
-signal a_out            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
-signal b_out            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal a_out            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
+signal b_out            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 
-signal cp_in            : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+signal cp_in            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 
 signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
@@ -87,24 +88,26 @@ process (clk, reset_n) begin
 if (falling_edge(clk) and reset_n='1') then
     CASE State IS
         WHEN RESET =>
-            last <= '0';
+            rsa_status<= std_logic_vector(to_unsigned(1, 32));
             msgout_valid <='0';
             ready_modmult <= '0';
             msgin_ready <= '0';
             State_next <= LOAD_NEW_MESSAGE;
         WHEN LOAD_NEW_MESSAGE =>
+             rsa_status<= std_logic_vector(to_unsigned(2, 32));
              msgin_ready <= '1';
              ready_modmult <= '0';
              msgout_valid <= '0';
              last <= msgin_last;
              counter <= std_logic_vector(to_unsigned(0,8));
              Shreg <= key_e_d; -- load key
-             c <= std_logic_vector(to_unsigned(1,256)); -- c=1
-             p <= msgin_data; -- p=m
+             c <= std_logic_vector(to_unsigned(1,MONT_BLOCK_SIZE)); -- c=1
+             p <= (MONT_BLOCK_SIZE-1 downto msgin_data'length => '0') & msgin_data; -- p=m
              if (msgin_valid = '1') then
              State_next <=ONE;
              end if;    
         WHEN ONE =>
+             rsa_status<= std_logic_vector(to_unsigned(3, 32));
              msgin_ready <= '0';
              a_out <= c;
              b_out <= p;             
@@ -115,6 +118,7 @@ if (falling_edge(clk) and reset_n='1') then
              ready_modmult <= '1';
              end if;
         WHEN TWO =>
+            rsa_status<= std_logic_vector(to_unsigned(4, 32));
             msgin_ready <= '0';
             counter <= counter + 1;
             ready_modmult <= '0';
@@ -124,9 +128,10 @@ if (falling_edge(clk) and reset_n='1') then
             end if;
             State_next <= THREE;          
         WHEN THREE =>
+            rsa_status<= std_logic_vector(to_unsigned(5, 32));
             msgin_ready <= '0';
-            a_out <= p;
-            b_out <= p;
+            a_out <= p;  
+            b_out <= p;  
             
             if finito_modmult = '1' then
             State_next <= FOUR;
@@ -135,6 +140,7 @@ if (falling_edge(clk) and reset_n='1') then
             ready_modmult <= '1';
             end if;
         WHEN FOUR =>
+            rsa_status<= std_logic_vector(to_unsigned(6, 32));
             msgin_ready <= '0';
             ready_modmult <= '0';
             p <= cp_in;
@@ -144,10 +150,16 @@ if (falling_edge(clk) and reset_n='1') then
             State_next <= ONE;
             end if;
         WHEN READY_SEND =>
+            
             msgin_ready <= '0';
-            msgout_data <= c;
+            msgout_data <= c(C_BLOCK_SIZE-1 downto 0);
             msgout_valid <= '1';
             msgout_last <= last;
+            if last = '1' then
+            rsa_status<= std_logic_vector(to_unsigned(71, 32));
+            else
+            rsa_status<= std_logic_vector(to_unsigned(70, 32));
+            end if;
             if msgout_ready = '1' then
             State_next <= RESET;
             end if;
@@ -159,18 +171,14 @@ end if;
 
     if (rising_edge(clk) and reset_n = '1') then
         State <= State_next;
-        if State_next = ONE then
-            msgin_ready <= '0';
-        end if;
-         if State_next = RESET then
-            msgout_valid <= '0';
-        end if;       
+    
     end if;
     
     if (reset_n = '0') then
         State <= RESET;
         msgin_ready <= '0';
         msgout_valid <= '0';
+        msgout_last <= '0';
     end if;
     
 end process;

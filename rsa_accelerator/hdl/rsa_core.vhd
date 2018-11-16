@@ -122,12 +122,11 @@ REGX: entity work.rl_binary_method
     msgout_data     => msgout_data,
     key_e_d         => key_e_d,
     key_n           => key_n,
-    r2              => user_defined_16_23
-    
+    r2              => user_defined_16_23,
+    rsa_status      => rsa_status
 	);
 
 end generate GEN_REG;
-
 
 -- Instantiation of RL binary METHOD block.
 
@@ -139,5 +138,4 @@ end generate GEN_REG;
   
 --  msgout_data  <= msgin_data xor key_n;
 
-  rsa_status   <= (others => '0');
 end rtl;
