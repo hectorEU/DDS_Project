@@ -19,6 +19,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.std_logic_unsigned.all; -- needed for the + operator
 entity rsa_core is
 	generic (
 		-- Users to add parameters here
@@ -98,7 +99,43 @@ r2        : in std_logic_vector(C_BLOCK_SIZE-1 downto 0)
 );
 end component;
 
+type vectorC_BLOCK_SIZE is array (natural range <>) of std_logic_vector(C_BLOCK_SIZE-1 downto 0);
+type vectorBit is array (natural range <>) of std_logic;
+type vectorNatural is array (natural range <>) of natural;
+signal message_in : vectorC_BLOCK_SIZE(7 downto 0);
+signal message_out : vectorC_BLOCK_SIZE(7 downto 0);
+signal valid_in, valid_out, ready_in, ready_out, last_in, last_out    : vectorBit(7 downto 0);
+
+
+
+signal buissy_flag    : std_logic;
+signal counter, counter_next, fifo_counter    : natural;
+signal FIFO_pointer    : vectorNatural(7 downto 0);
 begin
+
+
+
+process(clk, reset_n) begin
+if (reset_n = '0') then
+counter <= 0;
+elsif rising_edge(clk) then
+
+-- TODO: distribute messages to seperate entities of  rl binary method. and make sure the asnwer is received in the right order.
+end if;  
+end process;
+
+
+
+            valid_in(counter) <= msgin_valid;
+            ready_out(counter) <= msgout_ready;
+            last_in(counter) <= msgin_last;
+            message_in(counter) <= msgin_data;
+            
+            msgout_data <= message_out(counter);
+            msgout_last<= last_out(counter);
+            msgin_ready <= ready_in(counter);
+            msgout_valid <= valid_out(counter);
+
 
 
 
@@ -111,15 +148,15 @@ REGX: entity work.rl_binary_method
 	)
 	port map (
 	clk            => clk,
-	msgin_valid    =>msgin_valid,
-	msgin_ready    => msgin_ready,
-	msgout_ready    => msgout_ready,
-	msgin_last    => msgin_last,
-	msgout_last    => msgout_last,
+	msgin_valid    =>valid_in(i),
+	msgin_ready    => ready_in(i),
+	msgout_ready    => ready_out(i),
+	msgin_last    => last_in(i),
+	msgout_last    => last_out(i),
 	reset_n        => reset_n,
-    msgin_data     => msgin_data,
-  	msgout_valid    =>msgout_valid,  
-    msgout_data     => msgout_data,
+    msgin_data     => message_in(i),
+  	msgout_valid    =>valid_out(i),  
+    msgout_data     => message_out(i),
     key_e_d         => key_e_d,
     key_n           => key_n,
     r2              => user_defined_16_23,

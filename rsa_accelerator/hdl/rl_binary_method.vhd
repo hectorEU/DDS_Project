@@ -40,10 +40,10 @@ signal c            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 signal p            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 signal i            : std_logic_vector(7 downto 0); -- counter
 
-signal a_out            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
-signal b_out            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
+signal a_out,a_out2             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
+signal b_out, b_out2             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 
-signal cp_in            : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
+signal cp_in, cp_in2             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 
 signal Shreg    : std_logic_vector(C_BLOCK_SIZE-1 downto 0);
 
@@ -51,11 +51,11 @@ signal counter    : std_logic_vector(7 downto 0);
 signal clk_counter    : std_logic_vector(7 downto 0);
 
 
-TYPE State_type IS (RESET, LOAD_NEW_MESSAGE, ONE, TWO, THREE, FOUR, READY_SEND); -- the 4 different states
+TYPE State_type IS (LOAD_NEW_MESSAGE, ONE, TWO, THREE, FOUR, READY_SEND); -- the 4 different states
 	SIGNAL State,State_next : State_Type;   -- Create a signal that uses 
 	
 
-signal clk_256, ready_modmult, finito_modmult, dbg, last:      std_logic := '0'; -- clock divided 256 times.
+signal clk_256, ready_modmult2, finito_modmult2, ready_modmult, finito_modmult, dbg, last:      std_logic := '0'; -- clock divided 256 times.
 begin
 
 --  . corresponding to the function: int RL_binary_method(int m, int e, int modulus, int r2, int k) where the return is msgout_data--
@@ -80,23 +80,39 @@ u_mod_mult : entity work.mod_mult
     key_n           => key_n,
     k          => r2
 	);
-	
+
+u_mod_mult2 : entity work.mod_mult
+	generic map (
+		C_BLOCK_SIZE        => C_BLOCK_SIZE
+	)
+	port map (
+	clk => clk,
+	ready_in => ready_modmult2,
+	ready_out => finito_modmult2,
+	reset_n => reset_n,
+    a     => a_out2,
+    b     => b_out2,
+    cp_out         => cp_in2,
+    key_n           => key_n,
+    k          => r2
+	);
 
 process (clk, reset_n) begin
 
 
 if (falling_edge(clk) and reset_n='1') then
     CASE State IS
-        WHEN RESET =>
-            rsa_status<= std_logic_vector(to_unsigned(1, 32));
-            msgout_valid <='0';
-            ready_modmult <= '0';
-            msgin_ready <= '0';
-            State_next <= LOAD_NEW_MESSAGE;
+--        WHEN RESET =>
+--            rsa_status<= std_logic_vector(to_unsigned(1, 32));
+--            msgout_valid <='0';
+--            ready_modmult <= '0';
+--            msgin_ready <= '0';
+--            State_next <= LOAD_NEW_MESSAGE;
         WHEN LOAD_NEW_MESSAGE =>
-             rsa_status<= std_logic_vector(to_unsigned(2, 32));
+             rsa_status<= std_logic_vector(to_unsigned(0, 32));
              msgin_ready <= '1';
              ready_modmult <= '0';
+             ready_modmult2 <= '0';
              msgout_valid <= '0';
              last <= msgin_last;
              counter <= std_logic_vector(to_unsigned(0,8));
@@ -107,48 +123,40 @@ if (falling_edge(clk) and reset_n='1') then
              State_next <=ONE;
              end if;    
         WHEN ONE =>
-             rsa_status<= std_logic_vector(to_unsigned(3, 32));
+             rsa_status<= std_logic_vector(to_unsigned(1, 32));
              msgin_ready <= '0';
              a_out <= c;
-             b_out <= p;             
-             if finito_modmult = '1' then -- we have to wait for this modmult to finish.
+             b_out <= p;       
+             a_out2 <= p;  
+             b_out2 <= p;        
+             if finito_modmult = '1'  and finito_modmult2 = '1'  then -- we have to wait for this modmult to finish.
              State_next <= TWO;
-             ready_modmult <= '0';
-             else
-             ready_modmult <= '1';
+             counter <= counter + 1;
              end if;
+             
+             ready_modmult <= not finito_modmult;
+             ready_modmult2 <= not finito_modmult2;
+             
         WHEN TWO =>
-            rsa_status<= std_logic_vector(to_unsigned(4, 32));
+            rsa_status<= std_logic_vector(to_unsigned(1, 32));
             msgin_ready <= '0';
-            counter <= counter + 1;
+            
             ready_modmult <= '0';
+            ready_modmult2 <= '0';
             Shreg <= '0' & Shreg(C_BLOCK_SIZE-1 downto 1);     -- shift e/d left to right]
             if (Shreg(0) = '1') then
                 c<=cp_in;
             end if;
-            State_next <= THREE;          
-        WHEN THREE =>
-            rsa_status<= std_logic_vector(to_unsigned(5, 32));
-            msgin_ready <= '0';
-            a_out <= p;  
-            b_out <= p;  
-            
-            if finito_modmult = '1' then
-            State_next <= FOUR;
-            ready_modmult <= '0';
-            else
-            ready_modmult <= '1';
-            end if;
-        WHEN FOUR =>
-            rsa_status<= std_logic_vector(to_unsigned(6, 32));
-            msgin_ready <= '0';
-            ready_modmult <= '0';
-            p <= cp_in;
+            p <= cp_in2;
             if (counter = 0) then
             State_next <= READY_SEND;
             else
             State_next <= ONE;
-            end if;
+            end if;        
+        WHEN THREE =>
+
+        WHEN FOUR =>
+
         WHEN READY_SEND =>
             
             msgin_ready <= '0';
@@ -156,16 +164,16 @@ if (falling_edge(clk) and reset_n='1') then
             msgout_valid <= '1';
             msgout_last <= last;
             if last = '1' then
-            rsa_status<= std_logic_vector(to_unsigned(71, 32));
+            rsa_status<= std_logic_vector(to_unsigned(0, 32));
             else
-            rsa_status<= std_logic_vector(to_unsigned(70, 32));
+            rsa_status<= std_logic_vector(to_unsigned(0, 32));
             end if;
             if msgout_ready = '1' then
-            State_next <= RESET;
+            State_next <= LOAD_NEW_MESSAGE;
             end if;
             
         WHEN others =>
-            State <= RESET;
+            State <= LOAD_NEW_MESSAGE;
     end CASE;
 end if;
 
@@ -175,7 +183,7 @@ end if;
     end if;
     
     if (reset_n = '0') then
-        State <= RESET;
+        State <= LOAD_NEW_MESSAGE;
         msgin_ready <= '0';
         msgout_valid <= '0';
         msgout_last <= '0';

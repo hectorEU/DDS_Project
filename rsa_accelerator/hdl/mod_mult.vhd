@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
+use ieee.std_logic_unsigned.all; -- needed for the + operator
 entity mod_mult is 
 	generic (
     -- Users to add parameters here
@@ -30,10 +30,11 @@ end mod_mult;
 
 architecture modular_multiplier of mod_mult is
 
+signal counter    : std_logic_vector(3 downto 0);
 signal r_1             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 signal k_long             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 signal output             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
-signal ready_out_s:      std_logic := '0';
+signal ready_out_s, ready_flag, ready_in_delayed:      std_logic := '0';
 begin
 
 -- Instantiation of MONTGOMERY blocks (can these run in parallel?.

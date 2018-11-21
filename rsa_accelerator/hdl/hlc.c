@@ -17,6 +17,9 @@ int montgomery(int a, int b, int modulus, int k)
         }
             
     }
+	if (r>=modulus){
+		r = r-modulus;
+	}
     return r;
 }
 
