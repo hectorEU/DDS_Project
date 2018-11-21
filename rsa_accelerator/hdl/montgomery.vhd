@@ -37,9 +37,9 @@ signal counter    : std_logic_vector(7 downto 0);
 signal r_current,r_last,r_temp    : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
 
 TYPE State_type IS (INIT, ONE, TWO, THREE, FOUR, FIVE, READY_RETURN, READY_READ); -- the 4 different states
-SIGNAL State,State_next : State_Type;   -- Create a signal that uses 
+SIGNAL State,State_next: State_Type;   -- Create a signal that uses 
 	
-
+signal shifter_lr, msbfound :natural;
 begin
 
 
@@ -47,9 +47,11 @@ begin
 process (clk, reset_n) begin
 if (reset_n = '0') then
 State <= INIT;
-elsif (rising_edge(clk) and reset_n='1') then
+elsif ( (rising_edge(clk)) and reset_n='1') then
     CASE State IS
         WHEN INIT =>
+            msbfound<=0;
+            shifter_lr <= 0;
             ready_out <='0';
             counter <= std_logic_vector(to_unsigned(0,8));
             Shreg <= a; -- load a.
@@ -61,14 +63,17 @@ elsif (rising_edge(clk) and reset_n='1') then
             end if;
         WHEN ONE =>
             ready_out <='0';
-            if (Shreg(0) = '1') then -- ((a >> i) & 1) * b;
+            if (Shreg(shifter_lr) = '1') then -- ((a >> i) & 1) * b;
                 r_current <= r_last + b;
             else
                 r_current <= r_last;
             end if;
+
             
             counter <= counter + 1;
-            Shreg <= '0' & Shreg(MONT_BLOCK_SIZE-1 downto 1);     -- (a >> i
+            shifter_lr <= shifter_lr +1;
+            
+        --    Shreg <= '0' & Shreg(MONT_BLOCK_SIZE-1 downto 1);     -- (a >> i
             
             State_next <= TWO;
        WHEN TWO =>
@@ -87,7 +92,7 @@ elsif (rising_edge(clk) and reset_n='1') then
             if (counter = 0) then
                 State_next <= READY_RETURN;
             else
-                State_next <= FIVE;
+                State_next <= ONE;
             end if;
             
      WHEN FOUR =>
@@ -96,13 +101,9 @@ elsif (rising_edge(clk) and reset_n='1') then
             if (counter = 0) then
                 State_next <= READY_RETURN;
             else
-                State_next <= FIVE;
+                State_next <= ONE;
             end if;
-    WHEN FIVE =>
-            ready_out <='0';
-            r_current <= r_last;
-            
-            State_next <= ONE;
+
     WHEN READY_RETURN =>
             ready_out <='1';
             if r_current >= key_n then
@@ -119,7 +120,7 @@ elsif (rising_edge(clk) and reset_n='1') then
     end CASE;
 end if;    
 
-if(falling_edge(clk) and reset_n='1') then
+if( (falling_edge(clk)) and reset_n='1') then
  --   if (ready_in = '0') then
 --        State <= INIT;
  --       ready_out <='0';
@@ -130,6 +131,7 @@ if(falling_edge(clk) and reset_n='1') then
   --  end if;
 end if;    
 end process;
+
 
 
 
