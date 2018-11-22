@@ -30,11 +30,7 @@ end mod_mult;
 
 architecture modular_multiplier of mod_mult is
 
-signal counter    : std_logic_vector(3 downto 0);
-signal r_1             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
-signal k_long             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
-signal output             : std_logic_vector(MONT_BLOCK_SIZE-1 downto 0);
-signal ready_out_s, ready_flag, ready_in_delayed:      std_logic := '0';
+
 begin
 
 -- Instantiation of MONTGOMERY blocks (can these run in parallel?.
@@ -45,38 +41,21 @@ u_montgomery1 : entity work.montgomery
 	port map (
 	clk => clk,
 	ready_in => ready_in,
-	ready_out => ready_out_s,
+	ready_out => ready_out,
 	reset_n => reset_n,
     a     => a,
     b     => b,
-    r         => r_1,
-    key_n           => key_n
+    r         => cp_out,
+    key_n           => key_n,
+    k          => k
 	);
 	
-u_montgomery2 : entity work.montgomery
-        generic map (
-            C_BLOCK_SIZE        => C_BLOCK_SIZE
-        )
-        port map (
-        clk => clk,
-        ready_in => ready_out_s,
-        ready_out => ready_out,
-        reset_n => reset_n,
-        a     => r_1,
-        b     => k_long,
-        r         => output,
-        key_n           => key_n
-        );
 --  . corresponding to the function: int mod_mult(int a, int b, int modulus, int c, int k)
 -- k = C_BLOCK_SIZE
 -- c = r2
 -- cp_out is returned.
 
 --cp_out <= k; --<= std_logic_vector(to_unsigned(123456789,256));
-
-k_long <= (MONT_BLOCK_SIZE-1 downto k'length => '0') & k;
-cp_out <= output; --output; -- return product from the modular multiplier. (but this is not ready until after 256 (local) clk cycles (if the two previous can run in parallel) or 512 if they cant.
-
 
 
 end modular_multiplier;
